@@ -1,0 +1,51 @@
+# iOS アプリ CI パイプライン
+name: iOS CI
+
+on:
+  push:
+    branches: [main, develop, "feature/**", "fix/**"]
+    paths:
+      - "ios/**"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "ios/**"
+
+jobs:
+  ios-ci:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ios
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Xcode バージョン選択
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: SwiftLint インストール・実行
+        run: |
+          brew install swiftlint
+          swiftlint lint --strict
+
+      - name: ビルド
+        run: |
+          xcodebuild build \
+            -project AccessRoute.xcodeproj \
+            -scheme AccessRoute \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: テスト実行
+        run: |
+          xcodebuild test \
+            -project AccessRoute.xcodeproj \
+            -scheme AccessRoute \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO

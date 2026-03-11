@@ -1,0 +1,15 @@
+# AccessRoute iOS - Fastlane Appfile
+# App Store Connect / Apple Developer Portal の接続設定
+
+# App Store Connect の App ID (Bundle Identifier)
+app_identifier("com.accessroute.app")
+
+# Apple Developer Portal のメールアドレス
+# CI環境では環境変数から取得
+apple_id(ENV["APPLE_ID"] || "developer@accessroute.example.com")
+
+# App Store Connect のチーム ID
+itc_team_id(ENV["ITC_TEAM_ID"])
+
+# Apple Developer Portal のチーム ID
+team_id(ENV["TEAM_ID"])

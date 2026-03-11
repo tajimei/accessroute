@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 配布方法: TestFlight (app-store) -->
+	<key>method</key>
+	<string>app-store</string>
+
+	<!-- App Store Connect にアップロード -->
+	<key>destination</key>
+	<string>upload</string>
+
+	<!-- チーム ID -->
+	<key>teamID</key>
+	<string>$(DEVELOPMENT_TEAM)</string>
+
+	<!-- 署名スタイル: 自動署名 -->
+	<key>signingStyle</key>
+	<string>automatic</string>
+
+	<!-- Bitcode を含めない (Xcode 14以降は非推奨) -->
+	<key>uploadBitcode</key>
+	<false/>
+
+	<!-- シンボルをアップロード (クラッシュレポート用) -->
+	<key>uploadSymbols</key>
+	<true/>
+
+	<!-- コンパイル済みBitcodeの再生成を行わない -->
+	<key>compileBitcode</key>
+	<false/>
+
+	<!-- 署名証明書の管理: 自動 -->
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+
+	<!-- プロビジョニングプロファイル -->
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.accessroute.app</key>
+		<string>AccessRoute App Store Profile</string>
+	</dict>
+</dict>
+</plist>

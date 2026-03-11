@@ -1,0 +1,20 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Mock モード用の軽量依存のみ
+COPY requirements-cloudrun.txt .
+RUN pip install --no-cache-dir -r requirements-cloudrun.txt
+
+# アプリコード
+COPY server.py config.py parser.py model_manager.py monitor.py ./
+COPY prompts/ prompts/
+
+# Cloud Run はポート8080を使用
+ENV PORT=8080
+ENV MODEL_BACKEND=mock
+ENV HOST=0.0.0.0
+
+EXPOSE 8080
+
+CMD ["python", "-u", "server.py"]

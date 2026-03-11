@@ -1,0 +1,192 @@
+openapi: "3.0.3"
+info:
+  title: AccessRoute AI推論サーバー API
+  description: Backend (Cloud Functions) <-> AI推論サーバー (vLLM/TGI) の内部API仕様
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8000
+    description: ローカル開発環境
+  - url: https://ai.accessroute.example.com
+    description: 本番環境
+
+paths:
+  /v1/chat:
+    post:
+      summary: AIチャット応答生成
+      description: |
+        ユーザーとの会話履歴を受け取り、トラベルコンシェルジュとしての応答を生成する。
+        応答には会話テキストと構造化されたニーズデータを含む。
+      tags: [Chat]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIChatRequest"
+      responses:
+        "200":
+          description: AI応答
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIChatResponse"
+        "503":
+          description: モデルロード中またはサーバー過負荷
+
+  /v1/extract-needs:
+    post:
+      summary: 会話からユーザーニーズを抽出
+      description: |
+        会話履歴を解析し、ユーザーの身体状況・移動ニーズを構造化JSONとして抽出する。
+      tags: [NeedsExtraction]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtractNeedsRequest"
+      responses:
+        "200":
+          description: 抽出結果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractNeedsResponse"
+
+  /health:
+    get:
+      summary: ヘルスチェック
+      tags: [System]
+      responses:
+        "200":
+          description: サーバー正常稼働
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, loading, error]
+                  model:
+                    type: string
+                    description: ロード済みモデル名
+                  uptime_seconds:
+                    type: number
+
+components:
+  schemas:
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+
+    AIChatRequest:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+          description: システムプロンプト + 会話履歴 + 最新ユーザーメッセージ
+        user_profile:
+          type: object
+          nullable: true
+          description: 既知のユーザープロファイル（コンテキスト補強用）
+        max_tokens:
+          type: integer
+          default: 1024
+        temperature:
+          type: number
+          default: 0.7
+
+    AIChatResponse:
+      type: object
+      required: [reply]
+      properties:
+        reply:
+          type: string
+          description: AIの返答テキスト
+        extracted_needs:
+          type: object
+          nullable: true
+          description: 会話から抽出されたニーズ（UserProfileの部分型）
+          properties:
+            mobility_type:
+              type: string
+              enum: [wheelchair, stroller, cane, walk, other]
+            companions:
+              type: array
+              items:
+                type: string
+                enum: [child, elderly, disability]
+            max_distance_meters:
+              type: number
+            avoid_conditions:
+              type: array
+              items:
+                type: string
+                enum: [stairs, slope, crowd, dark]
+            prefer_conditions:
+              type: array
+              items:
+                type: string
+                enum: [restroom, rest_area, covered]
+        suggested_action:
+          type: string
+          nullable: true
+          enum: [ask_more, search_route, show_spots]
+          description: フロントエンドが次に取るべきアクション
+        confidence:
+          type: number
+          description: 応答の確信度 (0.0-1.0)
+
+    ExtractNeedsRequest:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+          description: 会話履歴全体
+
+    ExtractNeedsResponse:
+      type: object
+      required: [needs, confidence, missing_fields]
+      properties:
+        needs:
+          type: object
+          description: 抽出されたニーズ（UserProfileの部分型）
+          properties:
+            mobility_type:
+              type: string
+            companions:
+              type: array
+              items:
+                type: string
+            max_distance_meters:
+              type: number
+            avoid_conditions:
+              type: array
+              items:
+                type: string
+            prefer_conditions:
+              type: array
+              items:
+                type: string
+        confidence:
+          type: number
+          description: 抽出の確信度 (0.0-1.0)
+        missing_fields:
+          type: array
+          items:
+            type: string
+          description: まだ情報が不足しているフィールド名

@@ -1,0 +1,152 @@
+# AccessRoute iOS - Fastlane 設定ファイル
+# TestFlight配布およびApp Storeリリース用
+
+default_platform(:ios)
+
+platform :ios do
+
+  # ============================
+  # テスト
+  # ============================
+
+  desc "単体テスト・UIテストを実行する"
+  lane :test do
+    scan(
+      project: "AccessRoute.xcodeproj",
+      scheme: "AccessRoute",
+      devices: ["iPhone 16"],
+      code_coverage: true,
+      output_types: "junit,html",
+      output_directory: "fastlane/test_output",
+      clean: true
+    )
+  end
+
+  # ============================
+  # TestFlight 配布
+  # ============================
+
+  desc "TestFlight にビルドをアップロードする"
+  lane :beta do
+    # 証明書とプロビジョニングプロファイルの取得
+    setup_ci if ENV["CI"]
+
+    match(
+      type: "appstore",
+      readonly: is_ci,
+      app_identifier: "com.accessroute.app"
+    )
+
+    # ビルド番号をインクリメント
+    increment_build_number(
+      build_number: ENV["BUILD_NUMBER"] || latest_testflight_build_number + 1
+    )
+
+    # アーカイブビルド
+    build_app(
+      project: "AccessRoute.xcodeproj",
+      scheme: "AccessRoute",
+      export_method: "app-store",
+      export_options: "../ExportOptions.plist",
+      output_directory: "fastlane/builds",
+      output_name: "AccessRoute.ipa",
+      clean: true,
+      include_bitcode: false
+    )
+
+    # TestFlight にアップロード
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      apple_id: ENV["APP_STORE_CONNECT_APP_ID"],
+      changelog: changelog_from_git_commits(
+        commits_count: 10,
+        merge_commit_filtering: "exclude_merges"
+      )
+    )
+
+    # Slack 通知
+    if ENV["SLACK_WEBHOOK_URL"]
+      slack(
+        message: "AccessRoute TestFlight ビルドをアップロードしました",
+        slack_url: ENV["SLACK_WEBHOOK_URL"],
+        payload: {
+          "Build Number" => get_build_number,
+          "Version" => get_version_number,
+          "Git Branch" => git_branch
+        }
+      )
+    end
+  end
+
+  # ============================
+  # App Store リリース
+  # ============================
+
+  desc "App Store にリリースする"
+  lane :release do
+    # テスト実行
+    test
+
+    # 証明書とプロビジョニングプロファイルの取得
+    setup_ci if ENV["CI"]
+
+    match(
+      type: "appstore",
+      readonly: is_ci,
+      app_identifier: "com.accessroute.app"
+    )
+
+    # ビルド番号をインクリメント
+    increment_build_number(
+      build_number: latest_testflight_build_number + 1
+    )
+
+    # アーカイブビルド
+    build_app(
+      project: "AccessRoute.xcodeproj",
+      scheme: "AccessRoute",
+      export_method: "app-store",
+      export_options: "../ExportOptions.plist",
+      output_directory: "fastlane/builds",
+      output_name: "AccessRoute.ipa",
+      clean: true
+    )
+
+    # App Store Connect にアップロード
+    upload_to_app_store(
+      force: true,
+      skip_metadata: false,
+      skip_screenshots: true,
+      submit_for_review: false,
+      automatic_release: false,
+      precheck_include_in_app_purchases: false
+    )
+  end
+
+  # ============================
+  # ユーティリティ
+  # ============================
+
+  desc "証明書とプロビジョニングプロファイルを同期する"
+  lane :sync_certs do
+    match(
+      type: "appstore",
+      app_identifier: "com.accessroute.app",
+      readonly: false
+    )
+  end
+
+  # エラーハンドリング
+  error do |lane, exception|
+    if ENV["SLACK_WEBHOOK_URL"]
+      slack(
+        message: "Fastlane エラー: #{lane}",
+        slack_url: ENV["SLACK_WEBHOOK_URL"],
+        success: false,
+        payload: {
+          "Error" => exception.message
+        }
+      )
+    end
+  end
+end

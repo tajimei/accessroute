@@ -1,0 +1,50 @@
+# ============================================================
+# AccessRoute AI推論サーバー - systemdサービスファイル
+#
+# インストール手順:
+#   1. このファイルを /etc/systemd/system/ にコピー
+#   2. sudo systemctl daemon-reload
+#   3. sudo systemctl enable accessroute-ai
+#   4. sudo systemctl start accessroute-ai
+# ============================================================
+
+[Unit]
+Description=AccessRoute AI推論サーバー (Docker Compose)
+Documentation=https://github.com/accessroute/ai-server
+# Docker サービスが起動してから開始
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# 作業ディレクトリ（docker-compose.prod.yaml の場所）
+WorkingDirectory=/opt/accessroute/ai-server
+
+# 起動コマンド
+ExecStartPre=/usr/bin/docker compose -f docker-compose.prod.yaml pull
+ExecStart=/usr/bin/docker compose -f docker-compose.prod.yaml up -d
+
+# 停止コマンド（グレースフルシャットダウン）
+ExecStop=/usr/bin/docker compose -f docker-compose.prod.yaml down
+
+# 再起動ポリシー
+Restart=on-failure
+RestartSec=5
+
+# タイムアウト設定（モデルロードに時間がかかるため長めに設定）
+TimeoutStartSec=300
+TimeoutStopSec=60
+
+# 環境変数ファイル（機密情報はここに記載）
+EnvironmentFile=-/opt/accessroute/ai-server/.env
+
+# ログ設定
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=accessroute-ai
+
+[Install]
+WantedBy=multi-user.target

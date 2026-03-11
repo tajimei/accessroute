@@ -1,0 +1,104 @@
+import Foundation
+
+// アプリ設定・環境管理
+enum AppConfig {
+    // MARK: - バージョン情報
+
+    // アプリバージョン（セマンティックバージョニング）
+    static let appVersion = "1.0.0"
+
+    // ビルド番号
+    static let buildNumber = "1"
+
+    // 表示用バージョン文字列
+    static var displayVersion: String {
+        "\(appVersion) (\(buildNumber))"
+    }
+
+    // MARK: - 環境設定
+
+    // 現在の環境
+    static let environment: Environment = {
+        #if DEBUG
+        return .development
+        #else
+        return .production
+        #endif
+    }()
+
+    // 環境の種類
+    enum Environment: String {
+        case development
+        case staging
+        case production
+
+        // 環境名（表示用）
+        var displayName: String {
+            switch self {
+            case .development: return "開発"
+            case .staging: return "ステージング"
+            case .production: return "本番"
+            }
+        }
+    }
+
+    // MARK: - API設定
+
+    // APIベースURL（環境ごとに切替）
+    static var apiBaseURL: String {
+        switch environment {
+        case .development:
+            return "http://localhost:5001/accessroute/us-central1/api"
+        case .staging:
+            return "https://us-central1-accessroute-staging.cloudfunctions.net/api"
+        case .production:
+            return "https://us-central1-accessroute.cloudfunctions.net/api"
+        }
+    }
+
+    // APIタイムアウト（秒）
+    static let apiTimeout: TimeInterval = 30
+
+    // SSEストリーミングタイムアウト（秒）
+    static let sseTimeout: TimeInterval = 120
+
+    // MARK: - キャッシュ設定
+
+    // 画像キャッシュ最大枚数
+    static let imageCacheCountLimit = 50
+
+    // 画像キャッシュ最大サイズ（バイト）
+    static let imageCacheSizeLimit = 50 * 1024 * 1024
+
+    // MARK: - デバッグ設定
+
+    // デバッグモードかどうか
+    static var isDebug: Bool {
+        #if DEBUG
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    // ログ出力を有効にするか
+    static var isLoggingEnabled: Bool {
+        isDebug
+    }
+
+    // MARK: - アプリ情報
+
+    // Bundle IDから取得するバージョン情報
+    static var bundleVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? appVersion
+    }
+
+    static var bundleBuild: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? buildNumber
+    }
+
+    // アプリ名
+    static var appName: String {
+        Bundle.main.infoDictionary?["CFBundleName"] as? String ?? "AccessRoute"
+    }
+}

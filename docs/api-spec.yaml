@@ -1,0 +1,433 @@
+openapi: "3.0.3"
+info:
+  title: AccessRoute API
+  description: iOS <-> Backend (Cloud Functions) のREST API仕様
+  version: "1.0.0"
+
+servers:
+  - url: https://{region}-{project-id}.cloudfunctions.net/api
+    description: Firebase Cloud Functions
+
+paths:
+  /auth/profile:
+    get:
+      summary: ユーザープロファイル取得
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: ユーザープロファイル
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: プロファイル未作成
+    post:
+      summary: ユーザープロファイル作成・更新
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileInput"
+      responses:
+        "200":
+          description: 作成・更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /route/search:
+    post:
+      summary: バリアフリールート検索
+      tags: [Route]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteRequest"
+      responses:
+        "200":
+          description: ルート検索結果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteResponse"
+
+  /spots/nearby:
+    get:
+      summary: 周辺スポット検索
+      tags: [Spots]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: radiusMeters
+          in: query
+          schema:
+            type: integer
+            default: 500
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [restroom, rest_area, restaurant, cafe, park, kids_space, nursing_room, elevator, parking, other]
+      responses:
+        "200":
+          description: スポット一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  spots:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SpotSummary"
+
+  /spots/{spotId}:
+    get:
+      summary: スポット詳細取得
+      tags: [Spots]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: spotId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: スポット詳細
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotDetail"
+
+  /chat:
+    post:
+      summary: AIチャット（Phase 2）
+      tags: [AI]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: AIチャット応答
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+
+  /extract-needs:
+    post:
+      summary: 会話からニーズ抽出（Phase 2）
+      tags: [AI]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtractNeedsRequest"
+      responses:
+        "200":
+          description: 抽出結果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractNeedsResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Firebase Auth IDトークン
+
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        userId:
+          type: string
+        mobilityType:
+          type: string
+          enum: [wheelchair, stroller, cane, walk, other]
+        companions:
+          type: array
+          items:
+            type: string
+            enum: [child, elderly, disability]
+        maxDistanceMeters:
+          type: number
+        avoidConditions:
+          type: array
+          items:
+            type: string
+            enum: [stairs, slope, crowd, dark]
+        preferConditions:
+          type: array
+          items:
+            type: string
+            enum: [restroom, rest_area, covered]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserProfileInput:
+      type: object
+      required: [mobilityType]
+      properties:
+        mobilityType:
+          type: string
+          enum: [wheelchair, stroller, cane, walk, other]
+        companions:
+          type: array
+          items:
+            type: string
+            enum: [child, elderly, disability]
+        maxDistanceMeters:
+          type: number
+        avoidConditions:
+          type: array
+          items:
+            type: string
+            enum: [stairs, slope, crowd, dark]
+        preferConditions:
+          type: array
+          items:
+            type: string
+            enum: [restroom, rest_area, covered]
+
+    LatLng:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+
+    RouteRequest:
+      type: object
+      required: [origin, destination, userProfileId, prioritize]
+      properties:
+        origin:
+          $ref: "#/components/schemas/LatLng"
+        destination:
+          $ref: "#/components/schemas/LatLng"
+        userProfileId:
+          type: string
+        prioritize:
+          type: string
+          enum: [shortest, safest, accessible]
+
+    RouteStep:
+      type: object
+      properties:
+        stepId:
+          type: string
+        instruction:
+          type: string
+        distanceMeters:
+          type: number
+        durationSeconds:
+          type: number
+        startLocation:
+          $ref: "#/components/schemas/LatLng"
+        endLocation:
+          $ref: "#/components/schemas/LatLng"
+        polyline:
+          type: string
+        hasStairs:
+          type: boolean
+        hasSlope:
+          type: boolean
+        slopeGrade:
+          type: number
+        surfaceType:
+          type: string
+          enum: [paved, gravel, dirt, unknown]
+
+    SpotSummary:
+      type: object
+      properties:
+        spotId:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        location:
+          $ref: "#/components/schemas/LatLng"
+        accessibilityScore:
+          type: number
+        distanceFromRoute:
+          type: number
+
+    SpotDetail:
+      type: object
+      properties:
+        spotId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        location:
+          $ref: "#/components/schemas/LatLng"
+        address:
+          type: string
+        accessibilityScore:
+          type: number
+        accessibility:
+          type: object
+          properties:
+            wheelchairAccessible:
+              type: boolean
+            hasElevator:
+              type: boolean
+            hasAccessibleRestroom:
+              type: boolean
+            hasBabyChangingStation:
+              type: boolean
+            hasNursingRoom:
+              type: boolean
+            floorType:
+              type: string
+              enum: [flat, steps, slope, mixed]
+            notes:
+              type: array
+              items:
+                type: string
+        photoUrls:
+          type: array
+          items:
+            type: string
+        openingHours:
+          type: string
+        phoneNumber:
+          type: string
+        website:
+          type: string
+
+    RouteResponse:
+      type: object
+      properties:
+        routes:
+          type: array
+          items:
+            type: object
+            properties:
+              routeId:
+                type: string
+              accessibilityScore:
+                type: number
+              distanceMeters:
+                type: number
+              durationMinutes:
+                type: number
+              steps:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RouteStep"
+              warnings:
+                type: array
+                items:
+                  type: string
+              nearbySpots:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpotSummary"
+
+    ChatRequest:
+      type: object
+      required: [userId, message, conversationHistory]
+      properties:
+        userId:
+          type: string
+        message:
+          type: string
+        conversationHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+
+    ChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+        extractedNeeds:
+          type: object
+          nullable: true
+        suggestedAction:
+          type: string
+          nullable: true
+          enum: [ask_more, search_route, show_spots]
+
+    ExtractNeedsRequest:
+      type: object
+      required: [userId, conversationHistory]
+      properties:
+        userId:
+          type: string
+        conversationHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+
+    ExtractNeedsResponse:
+      type: object
+      properties:
+        needs:
+          type: object
+        confidence:
+          type: number
+        missingFields:
+          type: array
+          items:
+            type: string

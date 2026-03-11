@@ -1,0 +1,77 @@
+# Backend (Cloud Functions) CI パイプライン
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop, "feature/**", "fix/**"]
+    paths:
+      - "backend/**"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "backend/**"
+
+jobs:
+  backend-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/functions
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.js セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: backend/functions/package-lock.json
+
+      - name: 依存パッケージのインストール
+        run: npm ci
+
+      - name: Lint チェック
+        run: npm run lint
+
+      - name: 型チェック
+        run: npx tsc --noEmit
+
+      - name: テスト実行
+        run: npx jest --ci --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=json-summary
+
+      - name: カバレッジレポートをアーティファクトとして保存
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: backend/functions/coverage/
+          retention-days: 30
+
+      - name: カバレッジサマリーをPRコメントに投稿
+        if: github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          json-summary-path: backend/functions/coverage/coverage-summary.json
+          vite-config-path: ""
+
+      - name: テスト失敗時のSlack通知
+        if: failure()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Backend CI テスト失敗",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":x: *Backend CI テスト失敗*\n*リポジトリ:* ${{ github.repository }}\n*ブランチ:* ${{ github.ref_name }}\n*コミット:* ${{ github.sha }}\n*実行者:* ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|詳細を確認>"
+                  }
+                }
+              ]
+            }

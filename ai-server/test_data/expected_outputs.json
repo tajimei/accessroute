@@ -1,0 +1,342 @@
+[
+  {
+    "id": "tc-001",
+    "name": "車椅子ユーザーの東京観光",
+    "expected": {
+      "needs": {
+        "mobility_type": "wheelchair",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": ["stairs"],
+        "prefer_conditions": null
+      },
+      "confidence_min": 0.4,
+      "confidence_max": 0.7,
+      "missing_fields": ["companions", "max_distance_meters", "prefer_conditions"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-002",
+    "name": "ベビーカー＋高齢者同伴の京都旅行",
+    "expected": {
+      "needs": {
+        "mobility_type": "stroller",
+        "companions": ["child", "elderly"],
+        "max_distance_meters": 500,
+        "avoid_conditions": ["stairs", "slope"],
+        "prefer_conditions": null
+      },
+      "confidence_min": 0.7,
+      "confidence_max": 1.0,
+      "missing_fields": ["prefer_conditions"],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-003",
+    "name": "高齢者の一人散歩",
+    "expected": {
+      "needs": {
+        "mobility_type": "walk",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": null,
+        "prefer_conditions": ["rest_area", "covered"]
+      },
+      "confidence_min": 0.3,
+      "confidence_max": 0.6,
+      "missing_fields": ["companions", "max_distance_meters", "avoid_conditions"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-004",
+    "name": "杖ユーザーの混雑回避",
+    "expected": {
+      "needs": {
+        "mobility_type": "cane",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": ["crowd"],
+        "prefer_conditions": ["restroom"]
+      },
+      "confidence_min": 0.4,
+      "confidence_max": 0.7,
+      "missing_fields": ["companions", "max_distance_meters"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-005",
+    "name": "車椅子ユーザーの温泉旅行",
+    "expected": {
+      "needs": {
+        "mobility_type": "wheelchair",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": ["slope"],
+        "prefer_conditions": ["restroom"]
+      },
+      "confidence_min": 0.5,
+      "confidence_max": 0.8,
+      "missing_fields": ["companions", "max_distance_meters"],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-006",
+    "name": "子連れファミリーの遊園地",
+    "expected": {
+      "needs": {
+        "mobility_type": "stroller",
+        "companions": ["child"],
+        "max_distance_meters": 300,
+        "avoid_conditions": null,
+        "prefer_conditions": ["rest_area"]
+      },
+      "confidence_min": 0.6,
+      "confidence_max": 0.9,
+      "missing_fields": ["avoid_conditions"],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-007",
+    "name": "曖昧な要望からのニーズ抽出",
+    "expected": {
+      "needs": {
+        "mobility_type": "walk",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": null,
+        "prefer_conditions": null
+      },
+      "confidence_min": 0.2,
+      "confidence_max": 0.5,
+      "missing_fields": ["companions", "max_distance_meters", "avoid_conditions", "prefer_conditions"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-008",
+    "name": "障害者同伴の美術館巡り",
+    "expected": {
+      "needs": {
+        "mobility_type": "walk",
+        "companions": ["disability"],
+        "max_distance_meters": null,
+        "avoid_conditions": ["stairs"],
+        "prefer_conditions": null
+      },
+      "confidence_min": 0.4,
+      "confidence_max": 0.7,
+      "missing_fields": ["max_distance_meters", "prefer_conditions"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-009",
+    "name": "電動車椅子での長距離移動",
+    "expected": {
+      "needs": {
+        "mobility_type": "wheelchair",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": ["dark"],
+        "prefer_conditions": ["rest_area"]
+      },
+      "confidence_min": 0.4,
+      "confidence_max": 0.7,
+      "missing_fields": ["companions", "max_distance_meters"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-010",
+    "name": "シニア夫婦の日帰り旅行",
+    "expected": {
+      "needs": {
+        "mobility_type": "cane",
+        "companions": ["elderly"],
+        "max_distance_meters": 2000,
+        "avoid_conditions": ["stairs", "slope"],
+        "prefer_conditions": ["covered"]
+      },
+      "confidence_min": 0.7,
+      "confidence_max": 1.0,
+      "missing_fields": [],
+      "suggested_action": "search_route"
+    }
+  },
+  {
+    "id": "tc-011",
+    "name": "目的地未定の探索的相談（自然好き）",
+    "expected": {
+      "needs": {
+        "mobility_type": "wheelchair",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": ["stairs"],
+        "prefer_conditions": ["restroom"]
+      },
+      "confidence_min": 0.4,
+      "confidence_max": 0.7,
+      "missing_fields": ["companions", "max_distance_meters"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-012",
+    "name": "目的地未定の探索的相談（季節イベント）",
+    "expected": {
+      "needs": {
+        "mobility_type": "cane",
+        "companions": ["elderly"],
+        "max_distance_meters": 500,
+        "avoid_conditions": ["stairs", "slope"],
+        "prefer_conditions": ["rest_area"]
+      },
+      "confidence_min": 0.6,
+      "confidence_max": 0.9,
+      "missing_fields": [],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-013",
+    "name": "複数ターンで徐々にニーズが明らかになるケース",
+    "expected": {
+      "needs": {
+        "mobility_type": "cane",
+        "companions": null,
+        "max_distance_meters": 500,
+        "avoid_conditions": ["stairs", "crowd"],
+        "prefer_conditions": null
+      },
+      "confidence_min": 0.6,
+      "confidence_max": 0.9,
+      "missing_fields": ["companions", "prefer_conditions"],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-014",
+    "name": "複数ターンで情報が追加されるケース",
+    "expected": {
+      "needs": {
+        "mobility_type": "stroller",
+        "companions": ["child", "elderly"],
+        "max_distance_meters": 300,
+        "avoid_conditions": ["stairs", "slope"],
+        "prefer_conditions": null
+      },
+      "confidence_min": 0.7,
+      "confidence_max": 1.0,
+      "missing_fields": ["prefer_conditions"],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-015",
+    "name": "矛盾する情報を含むケース（歩行距離）",
+    "expected": {
+      "needs": {
+        "mobility_type": "walk",
+        "companions": null,
+        "max_distance_meters": 500,
+        "avoid_conditions": ["stairs"],
+        "prefer_conditions": ["rest_area", "covered"]
+      },
+      "confidence_min": 0.6,
+      "confidence_max": 0.9,
+      "missing_fields": ["companions"],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-016",
+    "name": "矛盾する情報を含むケース（同行者変更）",
+    "expected": {
+      "needs": {
+        "mobility_type": "wheelchair",
+        "companions": ["disability"],
+        "max_distance_meters": null,
+        "avoid_conditions": ["stairs"],
+        "prefer_conditions": ["restroom"]
+      },
+      "confidence_min": 0.5,
+      "confidence_max": 0.8,
+      "missing_fields": ["max_distance_meters"],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-017",
+    "name": "外国語混じりの入力",
+    "expected": {
+      "needs": {
+        "mobility_type": "wheelchair",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": ["stairs"],
+        "prefer_conditions": ["rest_area"]
+      },
+      "confidence_min": 0.4,
+      "confidence_max": 0.7,
+      "missing_fields": ["companions", "max_distance_meters"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-018",
+    "name": "非常に短い返答のケース",
+    "expected": {
+      "needs": {
+        "mobility_type": "wheelchair",
+        "companions": null,
+        "max_distance_meters": null,
+        "avoid_conditions": ["stairs"],
+        "prefer_conditions": null
+      },
+      "confidence_min": 0.3,
+      "confidence_max": 0.6,
+      "missing_fields": ["companions", "max_distance_meters", "prefer_conditions"],
+      "suggested_action": "ask_more"
+    }
+  },
+  {
+    "id": "tc-019",
+    "name": "松葉杖ユーザーのショッピング",
+    "expected": {
+      "needs": {
+        "mobility_type": "other",
+        "companions": null,
+        "max_distance_meters": 200,
+        "avoid_conditions": ["stairs", "crowd"],
+        "prefer_conditions": null
+      },
+      "confidence_min": 0.5,
+      "confidence_max": 0.8,
+      "missing_fields": ["companions", "prefer_conditions"],
+      "suggested_action": "show_spots"
+    }
+  },
+  {
+    "id": "tc-020",
+    "name": "全情報が揃っている理想的なケース",
+    "expected": {
+      "needs": {
+        "mobility_type": "wheelchair",
+        "companions": ["elderly"],
+        "max_distance_meters": 800,
+        "avoid_conditions": ["stairs", "slope"],
+        "prefer_conditions": ["restroom", "covered"]
+      },
+      "confidence_min": 0.85,
+      "confidence_max": 1.0,
+      "missing_fields": [],
+      "suggested_action": "search_route"
+    }
+  }
+]
