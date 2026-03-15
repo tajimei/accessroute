@@ -17,6 +17,13 @@ export const verifyAuth = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  // エミュレータ環境では認証をスキップ
+  if (process.env.FUNCTIONS_EMULATOR === "true") {
+    (req as AuthenticatedRequest).uid = (req.body?.userId as string) || "emulator-user";
+    next();
+    return;
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {

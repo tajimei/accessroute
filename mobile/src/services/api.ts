@@ -9,7 +9,11 @@ import {
 } from '../types';
 import { getIdToken } from './auth';
 
-const BASE_URL = 'https://asia-northeast1-accessroute-18207.cloudfunctions.net/api/api';
+// エミュレータ使用時はローカルURLに切り替え
+const USE_EMULATOR = process.env.EXPO_PUBLIC_USE_EMULATOR === 'true';
+const BASE_URL = USE_EMULATOR
+  ? 'http://172.29.57.67:5001/accessroute-18207/asia-northeast1/api/api'
+  : 'https://asia-northeast1-accessroute-18207.cloudfunctions.net/api/api';
 
 // API呼び出しタイムアウト（Cloud Functions コールドスタートに十分な時間を確保）
 const API_TIMEOUT_MS = 30000;
@@ -21,14 +25,18 @@ async function request<T>(
   queryParams?: Record<string, string>,
 ): Promise<T> {
   let token: string | null = null;
-  try {
-    token = await getIdToken();
-  } catch (e) {
-    console.warn('[API] トークン取得失敗:', e);
-  }
+  if (USE_EMULATOR) {
+    token = 'emulator-token';
+  } else {
+    try {
+      token = await getIdToken();
+    } catch (e) {
+      console.warn('[API] トークン取得失敗:', e);
+    }
 
-  if (!token) {
-    throw new Error('認証トークンがありません。ログインしてください。');
+    if (!token) {
+      throw new Error('認証トークンがありません。ログインしてください。');
+    }
   }
 
   let url = `${BASE_URL}${path}`;
