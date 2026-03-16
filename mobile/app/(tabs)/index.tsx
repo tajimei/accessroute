@@ -434,6 +434,41 @@ export default function HomeScreen() {
       </View>
 
       {/* 現在地情報（住所非表示） */}
+      {/* 現在地ボタン */}
+      {userLocation && (
+        <TouchableOpacity
+          style={styles.currentLocationButton}
+          onPress={async () => {
+            // 最新の位置を再取得
+            try {
+              const location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+              });
+              const { latitude, longitude } = location.coords;
+              setUserLocation(location.coords);
+              fetchAddress(latitude, longitude);
+              mapRef.current?.injectJavaScript(`
+                map.panTo({lat: ${latitude}, lng: ${longitude}});
+                map.setZoom(16);
+                true;
+              `);
+              fetchNearbySpots(latitude, longitude);
+            } catch {
+              // 再取得失敗時は既存の位置を使用
+              mapRef.current?.injectJavaScript(`
+                map.panTo({lat: ${userLocation.latitude}, lng: ${userLocation.longitude}});
+                map.setZoom(16);
+                true;
+              `);
+              fetchNearbySpots(userLocation.latitude, userLocation.longitude);
+            }
+          }}
+          accessibilityLabel="現在地に移動"
+          accessibilityHint="現在地を再取得して地図を移動します"
+        >
+          <Text style={styles.currentLocationIcon}>{'\u{1F4CD}'}</Text>
+        </TouchableOpacity>
+      )}
 
       {/* 周辺スポット */}
       {isLoading ? (
