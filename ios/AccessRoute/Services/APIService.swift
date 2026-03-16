@@ -257,23 +257,45 @@ actor APIService {
 
 // YOLPのレスポンスをデコードするための構造体
 private struct YOLPResponse: Codable {
-    let Feature: [YOLPFeature]?
+    let feature: [YOLPFeature]?
+
+    enum CodingKeys: String, CodingKey {
+        case feature = "Feature"
+    }
 }
 
 private struct YOLPFeature: Codable {
-    let Id: String
-    let Name: String?
-    let Geometry: YOLPGeometry?
-    let Category: [String]?
-    let Property: YOLPProperty?
+    let id: String // swiftlint:disable:this identifier_name
+    let name: String?
+    let geometry: YOLPGeometry?
+    let category: [String]?
+    let property: YOLPProperty?
+
+    enum CodingKeys: String, CodingKey {
+        case id = "Id"
+        case name = "Name"
+        case geometry = "Geometry"
+        case category = "Category"
+        case property = "Property"
+    }
 
     struct YOLPGeometry: Codable {
-        let Coordinates: String? // "経度,緯度"
+        let coordinates: String? // "経度,緯度"
+
+        enum CodingKeys: String, CodingKey {
+            case coordinates = "Coordinates"
+        }
     }
     struct YOLPProperty: Codable {
-        let Address: String?
-        let Tel1: String?
-        let Gid: String?
+        let address: String?
+        let tel1: String?
+        let gid: String?
+
+        enum CodingKeys: String, CodingKey {
+            case address = "Address"
+            case tel1 = "Tel1"
+            case gid = "Gid"
+        }
     }
 }
 
@@ -320,20 +342,20 @@ extension APIService {
         let yolpResponse = try decoder.decode(YOLPResponse.self, from: data)
 
         // YOLPのレスポンス ([YOLPFeature]) をアプリの共通モデル ([SpotSummary]) に変換
-        let spots = yolpResponse.Feature?.compactMap { feature -> SpotSummary? in
-            guard let name = feature.Name,
-                  let coordinatesString = feature.Geometry?.Coordinates else {
+        let spots = yolpResponse.feature?.compactMap { feature -> SpotSummary? in
+            guard let name = feature.name,
+                  let coordinatesString = feature.geometry?.coordinates else {
                 return nil
             }
-            
+
             let coordinates = coordinatesString.split(separator: ",").compactMap { Double($0) }
             guard coordinates.count == 2 else { return nil }
-            let lng = coordinates[0]
-            let lat = coordinates[1]
+            let spotLng = coordinates[0]
+            let spotLat = coordinates[1]
 
             // YOLPのカテゴリをアプリのカテゴリに大まかにマッピング (簡易版)
-            let category: SpotCategory = {
-                guard let yolpCategory = feature.Category?.first else { return .other }
+            let spotCategory: SpotCategory = {
+                guard let yolpCategory = feature.category?.first else { return .other }
                 if yolpCategory.contains("カフェ") { return .cafe }
                 if yolpCategory.contains("トイレ") { return .restroom }
                 if yolpCategory.contains("レストラン") { return .restaurant }
@@ -342,16 +364,15 @@ extension APIService {
             }()
 
             return SpotSummary(
-                spotId: feature.Property?.Gid ?? UUID().uuidString, // GidがあればそれをIDとして使用
+                spotId: feature.property?.gid ?? UUID().uuidString,
                 name: name,
-                category: category,
-                location: LatLng(lat: lat, lng: lng),
-                accessibilityScore: 50, // YOLPにはスコアがないのでダミー値
-                distanceFromRoute: 0 // ViewModelで計算するためここでは0
+                category: spotCategory,
+                location: LatLng(lat: spotLat, lng: spotLng),
+                accessibilityScore: 50,
+                distanceFromRoute: 0
             )
         }
-        
+
         return spots ?? []
     }
 }
-
