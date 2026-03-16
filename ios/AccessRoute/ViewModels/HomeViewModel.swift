@@ -45,7 +45,7 @@ final class HomeViewModel: ObservableObject {
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
         // ここに取得したアプリケーションID(Client ID)を設定してください
         // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-        let yahoJapanoApplicationId = "dmVyPTIwMjUwNyZpZD0yV3RTc0dPek04Jmhhc2g9TVRNd05qZzVPVGcwT1RkaVlqRTFZdw"
+        let yahoJapanoApplicationId = "YOUR_YAHOO"
 
         guard yahoJapanoApplicationId != "YOUR_YAHOO_JAPAN_APP_ID" else {
             errorMessage = "YOLPのアプリケーションIDが設定されていません。"
