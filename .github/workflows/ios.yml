@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # YOLPアプリケーションIDを環境変数として設定
       - name: YOLP App ID を環境変数に設定
