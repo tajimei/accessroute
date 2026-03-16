@@ -146,6 +146,7 @@ export default function HomeScreen() {
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [userLocation, setUserLocation] = useState<Location.LocationObjectCoords | null>(null);
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
   const [locationReady, setLocationReady] = useState(false);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -199,6 +200,19 @@ export default function HomeScreen() {
         });
         const { latitude, longitude } = location.coords;
         setUserLocation(location.coords);
+        // 逆ジオコーディングで住所を取得
+        try {
+          const [address] = await Location.reverseGeocodeAsync({
+            latitude,
+            longitude,
+          });
+          if (address) {
+            const parts = [address.city, address.district, address.street, address.name].filter(Boolean);
+            setCurrentAddress(parts.join(' ') || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          }
+        } catch {
+          setCurrentAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        }
         // initialRegion は一度だけ設定（以降のマップ操作で上書きしない）
         if (!initialRegionSetRef.current) {
           initialRegionSetRef.current = true;
@@ -458,7 +472,16 @@ export default function HomeScreen() {
               });
               const { latitude, longitude } = location.coords;
               setUserLocation(location.coords);
-              fetchAddress(latitude, longitude);
+              // 逆ジオコーディングで住所を更新
+              try {
+                const [address] = await Location.reverseGeocodeAsync({ latitude, longitude });
+                if (address) {
+                  const parts = [address.city, address.district, address.street, address.name].filter(Boolean);
+                  setCurrentAddress(parts.join(' ') || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                }
+              } catch {
+                setCurrentAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+              }
               mapRef.current?.injectJavaScript(`
                 map.panTo({lat: ${latitude}, lng: ${longitude}});
                 map.setZoom(16);
@@ -752,6 +775,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#999',
     marginTop: 4,
+  },
+
+  // 現在地ボタン
+  currentLocationButton: {
+    position: 'absolute',
+    bottom: 260,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 50,
+  },
+  currentLocationIcon: {
+    fontSize: 22,
   },
 
 });

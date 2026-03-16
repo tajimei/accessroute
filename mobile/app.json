@@ -30,6 +30,19 @@
     "plugins": [
       "expo-router"
     ],
-    "sdkVersion": "54.0.0"
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/35da5e9d-5572-4f1b-bc2b-32d9ec905e35"
+    },
+    "sdkVersion": "54.0.0",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "35da5e9d-5572-4f1b-bc2b-32d9ec905e35"
+      }
+    },
+    "owner": "hidcc"
   }
 }
