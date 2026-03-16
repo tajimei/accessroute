@@ -46,7 +46,7 @@ const MOBILITY_ICONS: Record<MobilityType, string> = {
 };
 
 const MOBILITY_DESCRIPTIONS: Record<MobilityType, string> = {
-  wheelchair: 'スロープやエレベーターを優先案内',
+  wheelchair: 'スロープやエレベーターを優先',
   stroller: '段差の少ないルートを優先案内',
   cane: '歩きやすい平坦なルートを案内',
   walk: '標準的なルート案内',
