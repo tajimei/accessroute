@@ -42,18 +42,31 @@ final class HomeViewModel: ObservableObject {
         isSearching = true
         errorMessage = nil
 
-        // TODO: Firebase Auth トークン取得後に実装
-        // do {
-        //     let token = try await AuthService.shared.getToken()
-        //     nearbySpots = try await APIService.shared.getNearbySpots(
-        //         lat: lat, lng: lng, token: token
-        //     )
-        // } catch {
-        //     errorMessage = error.localizedDescription
-        // }
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ここに取得したアプリケーションID(Client ID)を設定してください
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        let yahoJapanoApplicationId = "dmVyPTIwMjUwNyZpZD0yV3RTc0dPek04Jmhhc2g9TVRNd05qZzVPVGcwT1RkaVlqRTFZdw"
 
-        // モックデータで表示確認
-        nearbySpots = Self.mockNearbySpots()
+        guard yahoJapanoApplicationId != "YOUR_YAHOO_JAPAN_APP_ID" else {
+            errorMessage = "YOLPのアプリケーションIDが設定されていません。"
+            isSearching = false
+            return
+        }
+
+        do {
+            // YOLPのAPIを呼び出して周辺スポットを検索
+            nearbySpots = try await APIService.shared.searchNearbySpotsYOLP(
+                lat: lat,
+                lng: lng,
+                appId: yahoJapanoApplicationId,
+                query: "カフェ OR トイレ OR 休憩" // 検索したいキーワード
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+            // エラー発生時はリストを空にする
+            nearbySpots = []
+        }
+
         isSearching = false
     }
 

@@ -252,3 +252,106 @@ actor APIService {
         }
     }
 }
+
+// MARK: - YOLP (Yahoo! Open Local Platform)
+
+// YOLPのレスポンスをデコードするための構造体
+private struct YOLPResponse: Codable {
+    let Feature: [YOLPFeature]?
+}
+
+private struct YOLPFeature: Codable {
+    let Id: String
+    let Name: String?
+    let Geometry: YOLPGeometry?
+    let Category: [String]?
+    let Property: YOLPProperty?
+
+    struct YOLPGeometry: Codable {
+        let Coordinates: String? // "経度,緯度"
+    }
+    struct YOLPProperty: Codable {
+        let Address: String?
+        let Tel1: String?
+        let Gid: String?
+    }
+}
+
+extension APIService {
+    // YOLPで周辺スポットを検索
+    func searchNearbySpotsYOLP(
+        lat: Double,
+        lng: Double,
+        appId: String,
+        dist: Int = 1000, // 検索半径(m)
+        query: String? = nil // 検索キーワード
+    ) async throws -> [SpotSummary] {
+        
+        guard var components = URLComponents(string: "https://map.yahooapis.jp/search/local/V1/localSearch") else {
+            throw APIError.invalidURL
+        }
+
+        var queryItems = [
+            URLQueryItem(name: "appid", value: appId),
+            URLQueryItem(name: "lat", value: String(lat)),
+            URLQueryItem(name: "lon", value: String(lng)),
+            URLQueryItem(name: "dist", value: String(dist)),
+            URLQueryItem(name: "output", value: "json"),
+            URLQueryItem(name: "sort", value: "dist"), // 距離順でソート
+        ]
+        if let query = query {
+            queryItems.append(URLQueryItem(name: "query", value: query))
+        }
+        components.queryItems = queryItems
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw APIError.networkError(URLError(.badServerResponse))
+        }
+
+        let yolpResponse = try decoder.decode(YOLPResponse.self, from: data)
+
+        // YOLPのレスポンス ([YOLPFeature]) をアプリの共通モデル ([SpotSummary]) に変換
+        let spots = yolpResponse.Feature?.compactMap { feature -> SpotSummary? in
+            guard let name = feature.Name,
+                  let coordinatesString = feature.Geometry?.Coordinates else {
+                return nil
+            }
+            
+            let coordinates = coordinatesString.split(separator: ",").compactMap { Double($0) }
+            guard coordinates.count == 2 else { return nil }
+            let lng = coordinates[0]
+            let lat = coordinates[1]
+
+            // YOLPのカテゴリをアプリのカテゴリに大まかにマッピング (簡易版)
+            let category: SpotCategory = {
+                guard let yolpCategory = feature.Category?.first else { return .other }
+                if yolpCategory.contains("カフェ") { return .cafe }
+                if yolpCategory.contains("トイレ") { return .restroom }
+                if yolpCategory.contains("レストラン") { return .restaurant }
+                if yolpCategory.contains("公園") { return .park }
+                return .other
+            }()
+
+            return SpotSummary(
+                spotId: feature.Property?.Gid ?? UUID().uuidString, // GidがあればそれをIDとして使用
+                name: name,
+                category: category,
+                location: LatLng(lat: lat, lng: lng),
+                accessibilityScore: 50, // YOLPにはスコアがないのでダミー値
+                distanceFromRoute: 0 // ViewModelで計算するためここでは0
+            )
+        }
+        
+        return spots ?? []
+    }
+}
+
