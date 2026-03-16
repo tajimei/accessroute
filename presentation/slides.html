@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AccessRoute - Hack U Frontier 2026</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Meiryo', 'Noto Sans JP', sans-serif;
+    background: #0a0a0a;
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .slide {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    padding: 60px 80px;
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  .slide.active { display: flex; }
+
+  /* ===== Slide 1: Title ===== */
+  .slide-1 {
+    background: linear-gradient(135deg, #0D1B2A 0%, #1B2838 50%, #0D1B2A 100%);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide-1 .tagline {
+    font-size: 1.4rem;
+    color: #64B5F6;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+    font-weight: 700;
+  }
+  .slide-1 h1 {
+    font-size: 5rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #42A5F5, #66BB6A);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  .slide-1 .subtitle {
+    font-size: 1.8rem;
+    color: #B0BEC5;
+    font-weight: 700;
+    margin-bottom: 40px;
+  }
+  .slide-1 .team {
+    font-size: 1.1rem;
+    color: #78909C;
+    letter-spacing: 2px;
+  }
+  .slide-1 .theme-badge {
+    display: inline-block;
+    background: rgba(66, 165, 245, 0.15);
+    border: 1px solid rgba(66, 165, 245, 0.3);
+    border-radius: 30px;
+    padding: 10px 28px;
+    font-size: 1rem;
+    color: #64B5F6;
+    margin-bottom: 30px;
+  }
+
+  /* ===== Slide 2: Problem ===== */
+  .slide-2 {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 100px;
+  }
+  .slide-2 .section-label {
+    font-size: 1rem;
+    color: #ef5350;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+  .slide-2 h2 {
+    font-size: 3rem;
+    font-weight: 900;
+    line-height: 1.4;
+    margin-bottom: 40px;
+  }
+  .slide-2 h2 .highlight {
+    color: #ef5350;
+  }
+  .slide-2 .stats {
+    display: flex;
+    gap: 60px;
+    margin-top: 20px;
+  }
+  .slide-2 .stat-item {
+    text-align: center;
+  }
+  .slide-2 .stat-number {
+    font-size: 3.2rem;
+    font-weight: 900;
+    color: #ef5350;
+  }
+  .slide-2 .stat-label {
+    font-size: 1rem;
+    color: #90A4AE;
+    margin-top: 8px;
+  }
+
+  /* ===== Slide 3: Solution ===== */
+  .slide-3 {
+    background: linear-gradient(135deg, #0D1B2A 0%, #1B3A4B 100%);
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 100px;
+  }
+  .slide-3 .section-label {
+    font-size: 1rem;
+    color: #66BB6A;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+  .slide-3 h2 {
+    font-size: 2.6rem;
+    font-weight: 900;
+    margin-bottom: 50px;
+    line-height: 1.3;
+  }
+  .slide-3 .features {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 30px;
+  }
+  .slide-3 .feature-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 30px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .slide-3 .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+  }
+  .slide-3 .feature-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #66BB6A;
+  }
+  .slide-3 .feature-desc {
+    font-size: 0.95rem;
+    color: #B0BEC5;
+    line-height: 1.6;
+  }
+
+  /* ===== Slide 4: Demo (UX + Execution) ===== */
+  .slide-4 {
+    background: linear-gradient(135deg, #0a192f 0%, #172a45 100%);
+    flex-direction: column;
+    justify-content: center;
+    padding: 50px 80px;
+  }
+  .slide-4 .section-label {
+    font-size: 1rem;
+    color: #FFB74D;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .slide-4 h2 {
+    font-size: 2.4rem;
+    font-weight: 900;
+    margin-bottom: 40px;
+  }
+  .slide-4 .demo-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .slide-4 .demo-step {
+    background: rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    width: 180px;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s;
+  }
+  .slide-4 .demo-step:hover {
+    border-color: #FFB74D;
+    transform: translateY(-4px);
+  }
+  .slide-4 .demo-step .step-icon {
+    font-size: 2.4rem;
+    margin-bottom: 12px;
+  }
+  .slide-4 .demo-step .step-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #FFB74D;
+  }
+  .slide-4 .demo-step .step-desc {
+    font-size: 0.8rem;
+    color: #90A4AE;
+    line-height: 1.4;
+  }
+  .slide-4 .arrow {
+    font-size: 1.5rem;
+    color: #455A64;
+  }
+  .slide-4 .ux-note {
+    margin-top: 36px;
+    text-align: center;
+    font-size: 1.1rem;
+    color: #B0BEC5;
+    padding: 16px 30px;
+    background: rgba(255, 183, 77, 0.08);
+    border-radius: 12px;
+    border-left: 4px solid #FFB74D;
+  }
+
+  /* ===== Slide 5: Technology ===== */
+  .slide-5 {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+    flex-direction: column;
+    justify-content: center;
+    padding: 50px 80px;
+  }
+  .slide-5 .section-label {
+    font-size: 1rem;
+    color: #AB47BC;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .slide-5 h2 {
+    font-size: 2.4rem;
+    font-weight: 900;
+    margin-bottom: 40px;
+  }
+  .slide-5 .arch {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+  }
+  .slide-5 .arch-box {
+    background: rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    min-width: 200px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .slide-5 .arch-box .box-icon {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+  }
+  .slide-5 .arch-box .box-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #CE93D8;
+  }
+  .slide-5 .arch-box .box-tech {
+    font-size: 0.85rem;
+    color: #90A4AE;
+    line-height: 1.6;
+  }
+  .slide-5 .arch-arrow {
+    font-size: 1.8rem;
+    color: #455A64;
+  }
+  .slide-5 .tech-highlight {
+    margin-top: 30px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+  .slide-5 .tech-badge {
+    background: rgba(171, 71, 188, 0.15);
+    border: 1px solid rgba(171, 71, 188, 0.3);
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    color: #CE93D8;
+  }
+
+  /* ===== Slide 6: Closing ===== */
+  .slide-6 {
+    background: linear-gradient(135deg, #0D1B2A 0%, #1B2838 50%, #0D1B2A 100%);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide-6 h2 {
+    font-size: 3.2rem;
+    font-weight: 900;
+    margin-bottom: 24px;
+    background: linear-gradient(90deg, #42A5F5, #66BB6A);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .slide-6 .closing-text {
+    font-size: 1.6rem;
+    color: #B0BEC5;
+    line-height: 1.8;
+    margin-bottom: 40px;
+  }
+  .slide-6 .closing-text .em {
+    color: #FFB74D;
+    font-weight: 700;
+  }
+  .slide-6 .impact-stats {
+    display: flex;
+    gap: 50px;
+    margin-bottom: 40px;
+  }
+  .slide-6 .impact-item {
+    text-align: center;
+  }
+  .slide-6 .impact-num {
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: #66BB6A;
+  }
+  .slide-6 .impact-label {
+    font-size: 0.9rem;
+    color: #78909C;
+    margin-top: 4px;
+  }
+  .slide-6 .cta {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #42A5F5;
+    padding: 16px 40px;
+    border: 2px solid #42A5F5;
+    border-radius: 40px;
+    display: inline-block;
+  }
+
+  /* ===== Navigation ===== */
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav button:hover {
+    background: rgba(255,255,255,0.2);
+  }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 36px;
+    left: 40px;
+    font-size: 0.9rem;
+    color: #455A64;
+    z-index: 100;
+  }
+
+  .timer {
+    position: fixed;
+    top: 20px;
+    right: 40px;
+    font-size: 1.2rem;
+    color: #455A64;
+    z-index: 100;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .timer.running { color: #66BB6A; }
+  .timer.warning { color: #FFB74D; }
+  .timer.danger { color: #ef5350; }
+
+  /* Animation */
+  .slide.active {
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Slide 1: Title (10s) -->
+<div class="slide slide-1 active" data-time="10">
+  <div class="theme-badge">Hack U Frontier 2026 | 暮らしをHackせよ！</div>
+  <h1>AccessRoute</h1>
+  <div class="subtitle">すべての人に、バリアフリーな移動を。</div>
+  <div class="team">チーム: ______</div>
+</div>
+
+<!-- Slide 2: Problem (15s) - Value -->
+<div class="slide slide-2" data-time="15">
+  <div class="section-label">PROBLEM - VALUE</div>
+  <h2>
+    外出したいのに、<br>
+    <span class="highlight">「この道、通れるかな？」</span>が<br>
+    いつも不安。
+  </h2>
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-number">436万人</div>
+      <div class="stat-label">日本の車椅子利用者</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">3,600万人</div>
+      <div class="stat-label">高齢者人口</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">87万台</div>
+      <div class="stat-label">年間ベビーカー販売数</div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 3: Solution (15s) - Value + UX -->
+<div class="slide slide-3" data-time="15">
+  <div class="section-label">SOLUTION</div>
+  <h2>AIがあなたの「身体の状況」を理解し、<br>最適なバリアフリールートを提案</h2>
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">&#x1f4ac;</div>
+      <div class="feature-title">AI対話</div>
+      <div class="feature-desc">チャットで困りごとを話すだけで、あなたのニーズをAIが自動抽出</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#x1f5fa;</div>
+      <div class="feature-title">安全スコア付きルート</div>
+      <div class="feature-desc">階段・坂道・未舗装を検出し、0-100点でルートの安全性を可視化</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#x1f4cd;</div>
+      <div class="feature-title">周辺スポット提案</div>
+      <div class="feature-desc">車椅子対応トイレ、エレベーター、休憩所をプロフィールに合わせて表示</div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 4: Demo Flow (25s) - UX + Execution -->
+<div class="slide slide-4" data-time="25">
+  <div class="section-label">DEMO - UX &amp; EXECUTION</div>
+  <h2>実際の操作フロー</h2>
+  <div class="demo-flow">
+    <div class="demo-step">
+      <div class="step-icon">&#x1f9d1;&#x200d;&#x1f9bd;</div>
+      <div class="step-title">1. プロフィール</div>
+      <div class="step-desc">身体状況・同伴者・<br>回避条件を設定</div>
+    </div>
+    <div class="arrow">&#x25b6;</div>
+    <div class="demo-step">
+      <div class="step-icon">&#x1f4ac;</div>
+      <div class="step-title">2. AIチャット</div>
+      <div class="step-desc">「車椅子で東京駅に行きたい」と話すだけ</div>
+    </div>
+    <div class="arrow">&#x25b6;</div>
+    <div class="demo-step">
+      <div class="step-icon">&#x1f5fa;</div>
+      <div class="step-title">3. ルート検索</div>
+      <div class="step-desc">安全スコア付きの<br>ルート候補を表示</div>
+    </div>
+    <div class="arrow">&#x25b6;</div>
+    <div class="demo-step">
+      <div class="step-icon">&#x26a0;&#xfe0f;</div>
+      <div class="step-title">4. 警告表示</div>
+      <div class="step-desc">階段・急坂をステップ単位でアラート</div>
+    </div>
+    <div class="arrow">&#x25b6;</div>
+    <div class="demo-step">
+      <div class="step-icon">&#x2705;</div>
+      <div class="step-title">5. スポット案内</div>
+      <div class="step-desc">ルート沿いのバリアフリー施設を提案</div>
+    </div>
+  </div>
+  <div class="ux-note">
+    VoiceOver対応 / 最小タップ44pt / プロフィール連動で全画面パーソナライズ
+  </div>
+</div>
+
+<!-- Slide 5: Technology (15s) -->
+<div class="slide slide-5" data-time="15">
+  <div class="section-label">TECHNOLOGY</div>
+  <h2>技術アーキテクチャ</h2>
+  <div class="arch">
+    <div class="arch-box">
+      <div class="box-icon">&#x1f4f1;</div>
+      <div class="box-title">Mobile</div>
+      <div class="box-tech">React Native<br>Expo / TypeScript<br>Google Maps API</div>
+    </div>
+    <div class="arch-arrow">&#x27f7;</div>
+    <div class="arch-box">
+      <div class="box-icon">&#x2601;&#xfe0f;</div>
+      <div class="box-title">Backend</div>
+      <div class="box-tech">Firebase<br>Cloud Functions v2<br>Firestore / Auth</div>
+    </div>
+    <div class="arch-arrow">&#x27f7;</div>
+    <div class="arch-box">
+      <div class="box-icon">&#x1f9e0;</div>
+      <div class="box-title">AI Server</div>
+      <div class="box-tech">FastAPI<br>Qwen2.5-72B (HF API)<br>ニーズ抽出 + 対話</div>
+    </div>
+  </div>
+  <div class="tech-highlight">
+    <div class="tech-badge">独自アクセシビリティスコアリング</div>
+    <div class="tech-badge">16カテゴリ キーワード抽出AI</div>
+    <div class="tech-badge">全国40路線+ 鉄道ルート検索</div>
+  </div>
+</div>
+
+<!-- Slide 6: Closing (10s) -->
+<div class="slide slide-6" data-time="10">
+  <h2>AccessRoute</h2>
+  <div class="closing-text">
+    <span class="em">移動の不安</span>を<span class="em">安心</span>に変える。<br>
+    すべての人が自由に外出できる社会へ。
+  </div>
+  <div class="impact-stats">
+    <div class="impact-item">
+      <div class="impact-num">5画面</div>
+      <div class="impact-label">フル実装済み</div>
+    </div>
+    <div class="impact-item">
+      <div class="impact-num">AI対話</div>
+      <div class="impact-label">自然言語ニーズ抽出</div>
+    </div>
+    <div class="impact-item">
+      <div class="impact-num">0-100</div>
+      <div class="impact-label">安全スコアリング</div>
+    </div>
+  </div>
+  <div class="cta">暮らしの移動を、Hackする。</div>
+</div>
+
+<!-- Navigation -->
+<div class="slide-counter"><span id="current">1</span> / <span id="total">6</span></div>
+<div class="timer" id="timer" onclick="toggleTimer()">90s</div>
+<div class="nav">
+  <button onclick="prevSlide()">&#x25c0; Prev</button>
+  <button onclick="nextSlide()">Next &#x25b6;</button>
+</div>
+
+<script>
+  let currentSlide = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  document.getElementById('total').textContent = total;
+
+  function showSlide(n) {
+    slides.forEach(s => s.classList.remove('active'));
+    currentSlide = ((n % total) + total) % total;
+    slides[currentSlide].classList.add('active');
+    document.getElementById('current').textContent = currentSlide + 1;
+  }
+
+  function nextSlide() { showSlide(currentSlide + 1); }
+  function prevSlide() { showSlide(currentSlide - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+  });
+
+  // Timer
+  let timerRunning = false;
+  let timeLeft = 90;
+  let timerInterval;
+  const timerEl = document.getElementById('timer');
+
+  function toggleTimer() {
+    if (!timerRunning) {
+      timerRunning = true;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft + 's';
+        if (timeLeft <= 10) timerEl.className = 'timer danger';
+        else if (timeLeft <= 30) timerEl.className = 'timer warning';
+        else timerEl.className = 'timer running';
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timerEl.textContent = 'TIME!';
+        }
+      }, 1000);
+    } else {
+      timerRunning = false;
+      clearInterval(timerInterval);
+      timerEl.className = 'timer';
+    }
+  }
+</script>
+</body>
+</html>

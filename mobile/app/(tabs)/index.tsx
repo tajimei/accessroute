@@ -13,7 +13,7 @@ import {
 import MapView, { Marker, Region } from '../../src/components/MapViewWrapper';
 import { useRouter } from 'expo-router';
 import { SpotSummary } from '../../src/types';
-import { getNearbySpots, getPlaceSuggestions, reverseGeocodeLocation } from '../../src/services/api';
+import { getNearbySpots, getPlaceSuggestions, geocodeAddress } from '../../src/services/api';
 import * as Location from 'expo-location';
 
 // デフォルト位置（東京駅付近）
@@ -147,7 +147,6 @@ export default function HomeScreen() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [userLocation, setUserLocation] = useState<Location.LocationObjectCoords | null>(null);
   const [locationReady, setLocationReady] = useState(false);
-  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapRef = useRef<any>(null);
@@ -179,25 +178,6 @@ export default function HomeScreen() {
     [fetchNearbySpots],
   );
 
-  // 逆ジオコーディングで住所を取得
-  const fetchAddress = useCallback(async (lat: number, lng: number) => {
-    try {
-      const address = await reverseGeocodeLocation(lat, lng);
-      setCurrentAddress(address);
-    } catch {
-      // API失敗時は expo-location のローカル逆ジオコーディングを試行
-      try {
-        const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-        if (results.length > 0) {
-          const r = results[0];
-          const parts = [r.region, r.city, r.district, r.street, r.name].filter(Boolean);
-          setCurrentAddress(parts.join(' ') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-        }
-      } catch {
-        setCurrentAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-      }
-    }
-  }, []);
 
   // 現在地を取得してマップを移動
   useEffect(() => {
@@ -219,8 +199,6 @@ export default function HomeScreen() {
         });
         const { latitude, longitude } = location.coords;
         setUserLocation(location.coords);
-        fetchAddress(latitude, longitude);
-
         // initialRegion は一度だけ設定（以降のマップ操作で上書きしない）
         if (!initialRegionSetRef.current) {
           initialRegionSetRef.current = true;
@@ -247,7 +225,7 @@ export default function HomeScreen() {
         clearTimeout(suggestTimerRef.current);
       }
     };
-  }, [fetchNearbySpots, fetchAddress]);
+  }, [fetchNearbySpots]);
 
   // 検索テキスト変更時にサジェスト取得
   const handleSearchTextChange = useCallback((text: string) => {
@@ -285,12 +263,32 @@ export default function HomeScreen() {
 
   // サジェスト選択
   const handleSuggestionSelect = useCallback(
-    (suggestion: PlaceSuggestion) => {
+    async (suggestion: PlaceSuggestion) => {
       setSearchText(suggestion.description);
       setShowSuggestions(false);
+
+      // サジェスト選択時にバックグラウンドでジオコーディングし、座標付きでルート画面に遷移
+      try {
+        const location = await geocodeAddress(suggestion.description);
+        if (location) {
+          // ルート画面に座標も渡す（再ジオコーディング不要）
+          const trimmed = suggestion.description.trim();
+          const params = new URLSearchParams({ destination: trimmed });
+          if (userLocation) {
+            params.set('originLat', userLocation.latitude.toString());
+            params.set('originLng', userLocation.longitude.toString());
+          }
+          params.set('destLat', location.lat.toString());
+          params.set('destLng', location.lng.toString());
+          router.push(`/route?${params.toString()}`);
+          return;
+        }
+      } catch {
+        // ジオコーディング失敗時は従来のテキストのみ遷移にフォールバック
+      }
       handleSearch(suggestion.description);
     },
-    [handleSearch],
+    [handleSearch, userLocation, router],
   );
 
   // おすすめスポット選択
@@ -435,18 +433,7 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* 現在地情報 */}
-      {userLocation && currentAddress && (
-        <View style={styles.locationInfoContainer}>
-          <Text style={styles.locationInfoLabel}>現在地</Text>
-          <Text style={styles.locationInfoAddress} numberOfLines={2}>
-            {currentAddress}
-          </Text>
-          <Text style={styles.locationInfoCoords}>
-            {userLocation.latitude.toFixed(6)}, {userLocation.longitude.toFixed(6)}
-          </Text>
-        </View>
-      )}
+      {/* 現在地情報（住所非表示） */}
 
       {/* 周辺スポット */}
       {isLoading ? (

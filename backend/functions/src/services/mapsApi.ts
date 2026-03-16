@@ -29,6 +29,40 @@ const getApiKey = (): string => {
 };
 
 // ============================================================
+// ジオコーディングキャッシュ（インメモリ、Cloud Functions インスタンス単位）
+// ============================================================
+
+interface GeocachEntry {
+  location: LatLng;
+  createdAt: number;
+}
+
+const GEOCODE_CACHE = new Map<string, GeocachEntry>();
+const GEOCODE_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24時間
+const GEOCODE_CACHE_MAX_SIZE = 500;
+
+const getFromGeocodeCache = (key: string): LatLng | null => {
+  const entry = GEOCODE_CACHE.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.createdAt > GEOCODE_CACHE_TTL_MS) {
+    GEOCODE_CACHE.delete(key);
+    return null;
+  }
+  return entry.location;
+};
+
+const setGeocodeCache = (key: string, location: LatLng): void => {
+  // サイズ上限を超えたら最も古いエントリを削除
+  if (GEOCODE_CACHE.size >= GEOCODE_CACHE_MAX_SIZE) {
+    const firstKey = GEOCODE_CACHE.keys().next().value;
+    if (firstKey !== undefined) {
+      GEOCODE_CACHE.delete(firstKey);
+    }
+  }
+  GEOCODE_CACHE.set(key, { location, createdAt: Date.now() });
+};
+
+// ============================================================
 // 内部ヘルパー
 // ============================================================
 
@@ -424,6 +458,13 @@ export const getPlaceDetails = async (placeId: string): Promise<SpotDetail | nul
  * ジオコーディング（住所から座標を取得）
  */
 export const geocode = async (address: string): Promise<LatLng | null> => {
+  // キャッシュチェック
+  const cacheKey = address.trim().toLowerCase();
+  const cached = getFromGeocodeCache(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const apiKey = getApiKey();
   const url =
     `https://maps.googleapis.com/maps/api/geocode/json` +
@@ -448,7 +489,12 @@ export const geocode = async (address: string): Promise<LatLng | null> => {
   }
 
   const location = data.results[0].geometry.location;
-  return { lat: location.lat, lng: location.lng };
+  const result = { lat: location.lat, lng: location.lng };
+
+  // キャッシュに保存
+  setGeocodeCache(cacheKey, result);
+
+  return result;
 };
 
 /**

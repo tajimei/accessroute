@@ -28,7 +28,7 @@ import {
   MultiModalRoute,
   WaypointLeg,
 } from '../../src/types';
-import { searchRoute } from '../../src/services/api';
+import { searchRoute, getPlaceSuggestions } from '../../src/services/api';
 import { parseDirectionsResult } from '../../src/services/directions';
 import { getCurrentUserId } from '../../src/services/auth';
 import { searchTransitRoute, enhanceTransitPolylines } from '../../src/services/transitRouter';
@@ -507,7 +507,7 @@ function generateWaypointId(): string {
 }
 
 export default function RouteScreen() {
-  const params = useLocalSearchParams<{ destination?: string; originLat?: string; originLng?: string }>();
+  const params = useLocalSearchParams<{ destination?: string; originLat?: string; originLng?: string; destLat?: string; destLng?: string }>();
 
   // 入力状態
   const [originText, setOriginText] = useState('現在地');
@@ -541,8 +541,64 @@ export default function RouteScreen() {
 
   const lastParamDestRef = useRef<string | null>(null);
 
+  // オートコンプリートサジェスト
+  const [destSuggestions, setDestSuggestions] = useState<Array<{ description: string; place_id: string }>>([]);
+  const [showDestSuggestions, setShowDestSuggestions] = useState(false);
+  const [originSuggestions, setOriginSuggestions] = useState<Array<{ description: string; place_id: string }>>([]);
+  const [showOriginSuggestions, setShowOriginSuggestions] = useState(false);
+  const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // リクエスト重複排除用ID
   const searchIdRef = useRef(0);
+
+  // オートコンプリート取得（デバウンス付き）
+  const fetchSuggestions = useCallback(
+    (text: string, setter: typeof setDestSuggestions, showSetter: typeof setShowDestSuggestions) => {
+      if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+      if (text.trim().length < 2) {
+        setter([]);
+        showSetter(false);
+        return;
+      }
+      suggestTimerRef.current = setTimeout(async () => {
+        try {
+          const results = await getPlaceSuggestions(text);
+          setter(results);
+          showSetter(results.length > 0);
+        } catch {
+          setter([]);
+          showSetter(false);
+        }
+      }, 300);
+    },
+    [],
+  );
+
+  // サジェスト選択 → テキスト設定 + バックグラウンドジオコーディング
+  const handleDestSuggestionSelect = useCallback(
+    (suggestion: { description: string; place_id: string }) => {
+      setDestinationText(suggestion.description);
+      setShowDestSuggestions(false);
+      setDestCoords(null);
+      // バックグラウンドでジオコーディング → 検索ボタン押下時には座標が準備済み
+      geocode(suggestion.description).then((coords) => {
+        setDestCoords(coords);
+      }).catch(() => {});
+    },
+    [],
+  );
+
+  const handleOriginSuggestionSelect = useCallback(
+    (suggestion: { description: string; place_id: string }) => {
+      setOriginText(suggestion.description);
+      setShowOriginSuggestions(false);
+      setOriginCoords(null);
+      geocode(suggestion.description).then((coords) => {
+        setOriginCoords(coords);
+      }).catch(() => {});
+    },
+    [],
+  );
 
   // 経由地追加（最大3つ）
   const addWaypoint = useCallback(() => {
@@ -913,10 +969,11 @@ export default function RouteScreen() {
         const validWaypoints = waypoints.filter((wp) => wp.text.trim());
 
         // ジオコーディング: 出発地、全経由地、目的地を並列実行
+        // 既に座標がある場合はジオコーディングをスキップ
         const geocodePromises = [
-          geocode(originText),
-          ...validWaypoints.map((wp) => geocode(wp.text)),
-          geocode(destination),
+          originCoords ? Promise.resolve(originCoords) : geocode(originText),
+          ...validWaypoints.map((wp) => wp.coords ? Promise.resolve(wp.coords) : geocode(wp.text)),
+          destCoords ? Promise.resolve(destCoords) : geocode(destination),
         ];
         const allCoords = await Promise.all(geocodePromises);
 
@@ -1196,9 +1253,18 @@ export default function RouteScreen() {
         }
       }
 
+      // ホーム画面から目的地座標が渡されている場合はセット（ジオコーディングスキップ）
+      if (params.destLat && params.destLng) {
+        const lat = parseFloat(params.destLat);
+        const lng = parseFloat(params.destLng);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setDestCoords({ lat, lng });
+        }
+      }
+
       performSearch(params.destination);
     }
-  }, [params.destination, params.originLat, params.originLng, performSearch]);
+  }, [params.destination, params.originLat, params.originLng, params.destLat, params.destLng, performSearch]);
 
   // モード変更時に再検索（結果が既にある場合のみ）
   const prevModeRef = useRef(selectedMode);
@@ -1816,10 +1882,29 @@ export default function RouteScreen() {
             placeholder="出発地"
             placeholderTextColor="#999"
             value={originText}
-            onChangeText={setOriginText}
+            onChangeText={(text) => {
+              setOriginText(text);
+              setOriginCoords(null);
+              fetchSuggestions(text, setOriginSuggestions, setShowOriginSuggestions);
+            }}
+            onFocus={() => { if (originSuggestions.length > 0) setShowOriginSuggestions(true); }}
+            onBlur={() => { setTimeout(() => setShowOriginSuggestions(false), 200); }}
             accessibilityLabel="出発地入力フィールド"
           />
         </View>
+        {showOriginSuggestions && originSuggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            {originSuggestions.map((s, idx) => (
+              <TouchableOpacity
+                key={s.place_id + idx}
+                style={styles.suggestionItem}
+                onPress={() => handleOriginSuggestionSelect(s)}
+              >
+                <Text style={styles.suggestionText} numberOfLines={1}>{s.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* 経由地リスト */}
         {waypoints.map((wp, wpIndex) => (
@@ -1896,8 +1981,14 @@ export default function RouteScreen() {
             placeholder="目的地を入力"
             placeholderTextColor="#999"
             value={destinationText}
-            onChangeText={setDestinationText}
-            onSubmitEditing={() => performSearch()}
+            onChangeText={(text) => {
+              setDestinationText(text);
+              setDestCoords(null);
+              fetchSuggestions(text, setDestSuggestions, setShowDestSuggestions);
+            }}
+            onFocus={() => { if (destSuggestions.length > 0) setShowDestSuggestions(true); }}
+            onBlur={() => { setTimeout(() => setShowDestSuggestions(false), 200); }}
+            onSubmitEditing={() => { setShowDestSuggestions(false); performSearch(); }}
             returnKeyType="search"
             accessibilityLabel="目的地入力フィールド"
           />
@@ -1912,6 +2003,19 @@ export default function RouteScreen() {
             </TouchableOpacity>
           )}
         </View>
+        {showDestSuggestions && destSuggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            {destSuggestions.map((s, idx) => (
+              <TouchableOpacity
+                key={s.place_id + idx}
+                style={styles.suggestionItem}
+                onPress={() => handleDestSuggestionSelect(s)}
+              >
+                <Text style={styles.suggestionText} numberOfLines={1}>{s.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* 移動モードセレクター */}
@@ -2149,6 +2253,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     fontWeight: '600',
+  },
+
+  // オートコンプリートサジェスト
+  suggestionsContainer: {
+    backgroundColor: '#FFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+    marginLeft: 44,
+    marginRight: 12,
+  },
+  suggestionItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E5EA',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#333',
   },
 
   // 経由地追加ボタン

@@ -97,6 +97,19 @@ export async function searchRoute(req: RouteRequest): Promise<RouteResponse> {
   return request('POST', '/route/search', req);
 }
 
+// ルート検索（テキスト地名対応、ジオコーディング+ルート検索を一括実行）
+export async function searchRouteByName(req: {
+  originText?: string;
+  destinationText?: string;
+  originCoords?: { lat: number; lng: number };
+  destinationCoords?: { lat: number; lng: number };
+  userProfileId: string;
+  prioritize?: string;
+  mode?: string;
+}): Promise<RouteResponse & { resolvedOrigin: { lat: number; lng: number }; resolvedDestination: { lat: number; lng: number } }> {
+  return request('POST', '/route/search-by-name', req);
+}
+
 // スポット
 export async function getNearbySpots(
   lat: number,
@@ -208,4 +221,93 @@ export async function sendChat(
     message,
     conversationHistory: history.map((m) => ({ role: m.role, content: m.content })),
   });
+}
+
+/**
+ * ストリーミングチャット。チャンクごとにonChunkを呼び出し、
+ * 完了時にonDoneで最終レスポンスを返す。
+ */
+export async function sendChatStream(
+  userId: string,
+  message: string,
+  history: ChatMessage[],
+  onChunk: (text: string) => void,
+  onDone: (response: ChatResponse) => void,
+): Promise<void> {
+  let token: string | null = null;
+  if (USE_EMULATOR) {
+    token = 'emulator-token';
+  } else {
+    token = await getIdToken();
+    if (!token) {
+      throw new Error('認証トークンがありません。ログインしてください。');
+    }
+  }
+
+  const url = `${BASE_URL}/chat/stream`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        userId,
+        message,
+        conversationHistory: history.map((m) => ({ role: m.role, content: m.content })),
+        stream: true,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => '');
+      throw new Error(`API Error ${res.status}: ${errorBody}`);
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) {
+      throw new Error('ストリーミングレスポンスを取得できません');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr) continue;
+
+        try {
+          const event = JSON.parse(jsonStr);
+          if (event.type === 'chunk') {
+            onChunk(event.content);
+          } else if (event.type === 'done') {
+            onDone({
+              reply: event.reply,
+              extractedNeeds: event.extracted_needs,
+              suggestedAction: event.suggested_action,
+              confidence: event.confidence,
+            } as ChatResponse);
+          }
+        } catch {
+          // JSON解析失敗は無視
+        }
+      }
+    }
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

@@ -37,6 +37,12 @@ class ModelConfig:
             "MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct"
         )
     )
+    # ニーズ抽出用の軽量モデル（JSON返却のみなので小さいモデルで十分）
+    extraction_model_name: str = field(
+        default_factory=lambda: os.getenv(
+            "EXTRACTION_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct"
+        )
+    )
 
     # API設定（環境に応じて自動切り替え）
     api_key: str = field(default="")
