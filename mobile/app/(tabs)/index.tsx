@@ -107,7 +107,7 @@ function mockRecommendedSpots(): SpotSummary[] {
   return [
     {
       spotId: 'rec_1',
-      name: '丸の内バリアフリー広場',
+      name: '東京駅 バリアフリー',
       category: 'park',
       location: { lat: 35.6818, lng: 139.7660 },
       distanceMeters: 150,
@@ -433,7 +433,19 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* 現在地情報（住所非表示） */}
+      {/* 現在地情報 */}
+      {userLocation && currentAddress && (
+        <View style={styles.locationInfoContainer}>
+          <Text style={styles.locationInfoLabel}>現在地</Text>
+          <Text style={styles.locationInfoAddress} numberOfLines={2}>
+            {currentAddress}
+          </Text>
+          <Text style={styles.locationInfoCoords}>
+            {userLocation.latitude.toFixed(6)}, {userLocation.longitude.toFixed(6)}
+          </Text>
+        </View>
+      )}
+
       {/* 現在地ボタン */}
       {userLocation && (
         <TouchableOpacity

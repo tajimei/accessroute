@@ -81,7 +81,7 @@ final class HomeViewModel: ObservableObject {
         // 全ユーザー共通のおすすめ
         spots.append(SpotSummary(
             spotId: "rec_1",
-            name: "丸の内バリアフリー広場",
+            name: "東京駅 バリアフリーパーク",
             category: .park,
             location: LatLng(lat: 35.6818, lng: 139.7660),
             accessibilityScore: 95,
