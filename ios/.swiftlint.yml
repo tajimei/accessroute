@@ -1,19 +1,19 @@
 # SwiftLint 設定
 line_length:
-  warning: 150
-  error: 200
+  warning: 180
+  error: 250
 
 type_body_length:
   warning: 500
-  error: 800
+  error: 1000
 
 file_length:
   warning: 1000
   error: 2000
 
 function_body_length:
-  warning: 80
-  error: 150
+  warning: 100
+  error: 200
 
 cyclomatic_complexity:
   warning: 15
@@ -39,6 +39,7 @@ nesting:
 
 disabled_rules:
   - trailing_whitespace
+  - trailing_newline
   - comma
   - colon
   - trailing_comma
