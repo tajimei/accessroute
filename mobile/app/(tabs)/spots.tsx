@@ -13,7 +13,7 @@ import {
   UIManager,
 } from 'react-native';
 import { SpotSummary, SpotDetail } from '../../src/types';
-import { getNearbySpots, getSpotDetail } from '../../src/services/api';
+import { getNearbySpots, getNearbySpotsByYOLP, getSpotDetail } from '../../src/services/api';
 
 // Enable LayoutAnimation on Android
 if (
@@ -191,9 +191,36 @@ export default function SpotsScreen() {
 
     let results: SpotSummary[];
     try {
-      results = await getNearbySpots(lat, lng);
+      // Google と YOLP を並行取得してマージ
+      const [googleResult, yolpResult] = await Promise.allSettled([
+        getNearbySpots(lat, lng),
+        getNearbySpotsByYOLP(lat, lng),
+      ]);
+      const googleSpots = googleResult.status === 'fulfilled' ? googleResult.value : [];
+      const yolpSpots = yolpResult.status === 'fulfilled' ? yolpResult.value : [];
+
+      if (googleSpots.length === 0 && yolpSpots.length === 0) {
+        results = mockSpots();
+      } else {
+        // マージ（Google優先、名前重複を除外）
+        const seen = new Set<string>();
+        const googleNames = new Set(googleSpots.map((s) => s.name));
+        results = [];
+        for (const spot of googleSpots) {
+          if (!seen.has(spot.spotId)) {
+            seen.add(spot.spotId);
+            results.push(spot);
+          }
+        }
+        for (const spot of yolpSpots) {
+          if (!seen.has(spot.spotId) && !googleNames.has(spot.name)) {
+            seen.add(spot.spotId);
+            results.push(spot);
+          }
+        }
+      }
     } catch {
-      // API未接続時はモックデータを使用
+      // 両方失敗時はモックデータを使用
       results = mockSpots();
     }
 

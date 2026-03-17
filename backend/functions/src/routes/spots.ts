@@ -11,6 +11,7 @@ import {
   saveSearchHistory,
 } from "../services/firestore";
 import { searchNearbyPlaces, getPlaceDetails } from "../services/mapsApi";
+import { searchNearbyYOLP } from "../services/yolpApi";
 import { calculateSpotScore } from "../utils/scoring";
 import { getUserProfile } from "../services/firestore";
 
@@ -116,6 +117,64 @@ router.get("/nearby", async (req, res) => {
   } catch (error) {
     console.error("スポット検索エラー:", error);
     res.status(500).json({ error: "スポット検索に失敗しました" });
+  }
+});
+
+/**
+ * GET /api/spots/nearby/yolp
+ * Yahoo! YOLP API で周辺スポットを検索する
+ */
+router.get("/nearby/yolp", async (req, res) => {
+  try {
+    const { uid } = req as AuthenticatedRequest;
+    const lat = parseFloat(req.query.lat as string);
+    const lng = parseFloat(req.query.lng as string);
+    const radiusMeters = parseInt(req.query.radiusMeters as string, 10) || 500;
+    const query = req.query.query as string | undefined;
+
+    // バリデーション
+    if (isNaN(lat) || isNaN(lng)) {
+      res.status(400).json({ error: "lat と lng は必須です" });
+      return;
+    }
+
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      res.status(400).json({ error: "lat/lng の値が範囲外です" });
+      return;
+    }
+
+    if (radiusMeters < 1 || radiusMeters > 50000) {
+      res.status(400).json({ error: "radiusMeters は 1〜50000 の範囲で指定してください" });
+      return;
+    }
+
+    let spots: Awaited<ReturnType<typeof searchNearbyYOLP>>;
+    try {
+      spots = await searchNearbyYOLP(lat, lng, radiusMeters, query);
+    } catch (apiError) {
+      const message = apiError instanceof Error ? apiError.message : String(apiError);
+      console.error("YOLP API呼び出しエラー:", message);
+      if (message.includes("YOLP_APP_ID")) {
+        res.status(503).json({ error: "YOLPスポット検索サービスが一時的に利用できません" });
+        return;
+      }
+      res.status(502).json({ error: "YOLP外部サービスからのスポット検索に失敗しました" });
+      return;
+    }
+
+    // 検索履歴を保存（非同期）
+    saveSearchHistory(uid, "spot", {
+      lat,
+      lng,
+      radiusMeters,
+      query,
+      resultCount: spots.length,
+    }).catch((err) => console.error("検索履歴保存エラー:", err));
+
+    res.json({ spots });
+  } catch (error) {
+    console.error("YOLPスポット検索エラー:", error);
+    res.status(500).json({ error: "YOLPスポット検索に失敗しました" });
   }
 });
 

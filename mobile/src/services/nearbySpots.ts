@@ -2,7 +2,7 @@
 // ユーザーのニーズに基づいてスポットをスコアリング・フィルタリングする
 
 import { LatLng, SpotSummary } from '../types';
-import { getNearbySpots } from './api';
+import { getNearbySpots, getNearbySpotsByYOLP } from './api';
 import { UnifiedUserNeeds } from './userNeeds';
 
 // スコア付きスポット
@@ -208,7 +208,35 @@ function generateMockSpots(destination: LatLng, needs: UnifiedUserNeeds): SpotSu
 }
 
 /**
+ * Google と YOLP の結果をマージし、spotId ベースで重複を除去する
+ */
+function mergeSpots(googleSpots: SpotSummary[], yolpSpots: SpotSummary[]): SpotSummary[] {
+  const seen = new Set<string>();
+  const merged: SpotSummary[] = [];
+
+  // Google の結果を優先的に追加
+  for (const spot of googleSpots) {
+    if (!seen.has(spot.spotId)) {
+      seen.add(spot.spotId);
+      merged.push(spot);
+    }
+  }
+
+  // YOLP の結果を追加（名前が完全一致するものも重複として除外）
+  const googleNames = new Set(googleSpots.map((s) => s.name));
+  for (const spot of yolpSpots) {
+    if (!seen.has(spot.spotId) && !googleNames.has(spot.name)) {
+      seen.add(spot.spotId);
+      merged.push(spot);
+    }
+  }
+
+  return merged;
+}
+
+/**
  * 目的地周辺のパーソナライズされたスポットを取得
+ * Google Places と Yahoo YOLP を並行取得してマージ
  * API未接続時はニーズに応じたモックデータにフォールバック
  */
 export async function fetchPersonalizedSpots(
@@ -216,13 +244,21 @@ export async function fetchPersonalizedSpots(
   needs: UnifiedUserNeeds,
   radiusMeters: number = 500,
 ): Promise<ScoredSpot[]> {
-  let rawSpots: SpotSummary[];
+  // Google と YOLP を並行で取得
+  const [googleResult, yolpResult] = await Promise.allSettled([
+    getNearbySpots(destination.lat, destination.lng, radiusMeters),
+    getNearbySpotsByYOLP(destination.lat, destination.lng, radiusMeters),
+  ]);
 
-  try {
-    rawSpots = await getNearbySpots(destination.lat, destination.lng, radiusMeters);
-  } catch {
-    // API未接続時はモックデータを使用
+  const googleSpots = googleResult.status === 'fulfilled' ? googleResult.value : [];
+  const yolpSpots = yolpResult.status === 'fulfilled' ? yolpResult.value : [];
+
+  let rawSpots: SpotSummary[];
+  if (googleSpots.length === 0 && yolpSpots.length === 0) {
+    // 両方失敗時はモックデータにフォールバック
     rawSpots = generateMockSpots(destination, needs);
+  } else {
+    rawSpots = mergeSpots(googleSpots, yolpSpots);
   }
 
   // スコアリング

@@ -124,6 +124,25 @@ export async function getNearbySpots(
   return res.spots ?? [];
 }
 
+// YOLPスポット検索
+export async function getNearbySpotsByYOLP(
+  lat: number,
+  lng: number,
+  radiusMeters = 500,
+  query?: string,
+): Promise<SpotSummary[]> {
+  const params: Record<string, string> = {
+    lat: lat.toString(),
+    lng: lng.toString(),
+    radiusMeters: radiusMeters.toString(),
+  };
+  if (query) {
+    params.query = query;
+  }
+  const res = await request<{ spots: SpotSummary[] }>('GET', '/spots/nearby/yolp', undefined, params);
+  return res.spots ?? [];
+}
+
 export async function getSpotDetail(spotId: string): Promise<SpotDetail> {
   return request('GET', `/spots/${spotId}`);
 }

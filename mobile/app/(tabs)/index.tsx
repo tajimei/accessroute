@@ -13,7 +13,7 @@ import {
 import MapView, { Marker, Region } from '../../src/components/MapViewWrapper';
 import { useRouter } from 'expo-router';
 import { SpotSummary } from '../../src/types';
-import { getNearbySpots, getPlaceSuggestions, geocodeAddress } from '../../src/services/api';
+import { getNearbySpots, getNearbySpotsByYOLP, getPlaceSuggestions, geocodeAddress } from '../../src/services/api';
 import * as Location from 'expo-location';
 
 // デフォルト位置（東京駅付近）
@@ -152,14 +152,39 @@ export default function HomeScreen() {
   const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapRef = useRef<any>(null);
 
-  // 周辺スポット取得
+  // 周辺スポット取得（Google + YOLP 並行取得）
   const fetchNearbySpots = useCallback(async (lat: number, lng: number) => {
     setIsLoading(true);
     try {
-      const spots = await getNearbySpots(lat, lng);
-      setNearbySpots(spots);
+      const [googleResult, yolpResult] = await Promise.allSettled([
+        getNearbySpots(lat, lng),
+        getNearbySpotsByYOLP(lat, lng),
+      ]);
+      const googleSpots = googleResult.status === 'fulfilled' ? googleResult.value : [];
+      const yolpSpots = yolpResult.status === 'fulfilled' ? yolpResult.value : [];
+
+      if (googleSpots.length === 0 && yolpSpots.length === 0) {
+        setNearbySpots(mockNearbySpots(lat, lng));
+      } else {
+        // マージ（Google優先、名前重複を除外）
+        const seen = new Set<string>();
+        const googleNames = new Set(googleSpots.map((s) => s.name));
+        const merged: SpotSummary[] = [];
+        for (const spot of googleSpots) {
+          if (!seen.has(spot.spotId)) {
+            seen.add(spot.spotId);
+            merged.push(spot);
+          }
+        }
+        for (const spot of yolpSpots) {
+          if (!seen.has(spot.spotId) && !googleNames.has(spot.name)) {
+            seen.add(spot.spotId);
+            merged.push(spot);
+          }
+        }
+        setNearbySpots(merged);
+      }
     } catch {
-      // API未接続時は現在地周辺のモックデータを使用
       setNearbySpots(mockNearbySpots(lat, lng));
     } finally {
       setIsLoading(false);
