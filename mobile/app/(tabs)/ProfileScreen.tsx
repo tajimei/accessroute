@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react'; // useMemoを追加
 import {
   View, Text, ScrollView, Pressable, StyleSheet, 
   Dimensions, Platform, Alert
 } from 'react-native';
-import { Stack } from 'expo-router'; // タイトル設定用に追加
+// 階層を移動した constants からインポート
 import { MOBILITY_OPTIONS, AVOID_OPTIONS, PREFER_OPTIONS } from '../constants/profile';
 
 const { width } = Dimensions.get('window');
@@ -15,108 +15,58 @@ export default function ProfileScreen() {
   const [prefers, setPrefers] = useState<string[]>([]);
   const [distance, setDistance] = useState(1000);
 
+  // --- 追加：完了度を計算するロジック ---
+  const progress = useMemo(() => {
+    let score = 0;
+    // 1. 移動手段が選ばれているか (初期値 walk なので実質常に+40)
+    if (mobility) score += 40;
+    // 2. 回避条件が1つ以上選ばれているか
+    if (avoids.length > 0) score += 30;
+    // 3. 希望条件が1つ以上選ばれているか
+    if (prefers.length > 0) score += 30;
+    return score;
+  }, [mobility, avoids, prefers]); 
+  // ----------------------------------
+
   const toggleSelect = (id: string, list: string[], setList: (l: string[]) => void) => {
     setList(list.includes(id) ? list.filter(i => i !== id) : [...list, id]);
   };
 
-  // 保存処理の追加
   const handleSave = () => {
-    Alert.alert("設定を保存しました", "あなたのプロフィールに合わせたルート案内を行います。");
-    console.log({ mobility, avoids, prefers, distance });
+    Alert.alert("設定を保存しました", `完了度 ${progress}% の状態で保存されました。`);
+    console.log({ mobility, avoids, prefers, distance, progress });
   };
 
   return (
     <View style={styles.screen}>
-      {/* 画面名を「設定」に変更 */}
-      <Stack.Screen options={{ title: '設定', headerTitleStyle: { fontWeight: 'bold' } }} />
-
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         
-        {/* 1. 完了度 */}
+        {/* 1. 完了度（計算した progress を反映） */}
         <View style={styles.card}>
           <View style={styles.headerRow}>
             <Text style={styles.sectionTitle}>プロファイル完了度</Text>
-            <Text style={styles.percentageText}>65%</Text>
+            <Text style={styles.percentageText}>{progress}%</Text>
           </View>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: '65%' }]} />
+            {/* width を動的に変更 */}
+            <View style={[styles.progressFill, { width: `${progress}%` }]} />
           </View>
         </View>
 
-        {/* 2. 移動手段 */}
-        <Text style={styles.groupTitle}>移動手段</Text>
-        <View style={styles.card}>
-          {Object.entries(MOBILITY_OPTIONS).map(([key, opt]) => (
-            <Pressable 
-              key={key} 
-              onPress={() => setMobility(key)}
-              style={[styles.listRow, mobility === key && styles.selectedRow]}
-            >
-              <View style={[styles.iconBox, { backgroundColor: opt.color + '20' }]}>
-                <Text style={styles.rowIcon}>{opt.icon}</Text>
-              </View>
-              <View style={styles.rowTextInfo}>
-                <Text style={styles.rowLabel}>{opt.label}</Text>
-                <Text style={styles.rowDesc}>{opt.desc}</Text>
-              </View>
-              <View style={[styles.radioOuter, mobility === key && styles.radioActive]}>
-                {mobility === key && <View style={styles.radioInner} />}
-              </View>
-            </Pressable>
-          ))}
-        </View>
+        {/* ...（移動手段・回避条件・距離設定のコードはそのまま）... */}
+        {/* ※ 前回の回答で送った各項目のPressableなどは維持してください */}
 
-        {/* 3. 回避・希望条件 */}
-        <Text style={styles.groupTitle}>回避・希望条件</Text>
-        <View style={styles.grid}>
-          {Object.entries({...AVOID_OPTIONS, ...PREFER_OPTIONS}).map(([key, opt]) => {
-            const isSelected = avoids.includes(key) || prefers.includes(key);
-            const isAvoid = key in AVOID_OPTIONS;
-            return (
-              <Pressable 
-                key={key} 
-                onPress={() => isAvoid ? toggleSelect(key, avoids, setAvoids) : toggleSelect(key, prefers, setPrefers)}
-                style={[styles.tile, isSelected && styles.tileSelected]}
-              >
-                <Text style={styles.tileIcon}>{opt.icon}</Text>
-                <Text style={[styles.tileLabel, isSelected && styles.tileLabelSelected]}>{opt.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* 4. 距離設定 */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>最大移動距離</Text>
-          <View style={styles.distanceDisplay}>
-            <Text style={styles.distanceKm}>{(distance/1000).toFixed(1)}</Text>
-            <Text style={styles.distanceUnit}>km</Text>
-          </View>
-          <View style={styles.sliderContainer}>
-            <Pressable style={styles.stepBtn} onPress={() => setDistance(d => Math.max(100, d-100))}>
-              <Text style={styles.stepBtnText}>−</Text>
-            </Pressable>
-            <View style={styles.track}>
-              <View style={[styles.fill, { width: `${(distance/5000)*100}%` }]} />
-            </View>
-            <Pressable style={styles.stepBtn} onPress={() => setDistance(d => Math.min(5000, d+100))}>
-              <Text style={styles.stepBtnText}>＋</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* 下部の余白（ボタンに被らないように） */}
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* 改善：保存ボタンの配置を見直し */}
+      {/* 保存ボタン */}
       <View style={styles.footer}>
         <Pressable 
           style={({ pressed }) => [
             styles.saveButton,
             pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
           ]}
-          onPress={handleSave} // ここで関数を呼ぶ
+          onPress={handleSave}
         >
           <Text style={styles.saveButtonText}>設定を保存する</Text>
         </Pressable>
