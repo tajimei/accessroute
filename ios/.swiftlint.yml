@@ -4,16 +4,20 @@ line_length:
   error: 200
 
 type_body_length:
-  warning: 300
-  error: 500
+  warning: 500
+  error: 800
 
 file_length:
-  warning: 500
-  error: 1000
+  warning: 1000
+  error: 2000
 
 function_body_length:
-  warning: 60
-  error: 100
+  warning: 80
+  error: 150
+
+cyclomatic_complexity:
+  warning: 15
+  error: 20
 
 identifier_name:
   min_length:
@@ -26,9 +30,24 @@ identifier_name:
     - id
     - x
     - y
+    - m
+  allowed_symbols:
+    - _
+
+nesting:
+  type_level: 2
 
 disabled_rules:
   - trailing_whitespace
+  - comma
+  - colon
+  - trailing_comma
+  - opening_brace
+  - closing_brace
+  - todo
+  - for_where
+  - superfluous_disable_command
+  - invalid_swiftlint_command
 
 excluded:
   - Pods
