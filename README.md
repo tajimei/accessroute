@@ -1,28 +1,32 @@
-# README.md
+# README
 
-## Architecture Diagram
+## アーキテクチャ
 
-![Architecture Diagram](link_to_diagram)
+...existing architecture diagram...
 
-- Added box for Yahoo YOLP API connecting to Backend.
++------------------+       +---------------------+
+| Yahoo YOLP API   |       |  (建物内施設・口コミ情報) |
++------------------+       +---------------------+
 
-## Data Flow
+...rest of the section...
 
-1. User requests information.
-2. System processes request.
-3. **Yahoo YOLP API** usage for facility and toilet information.
-4. Response generated and sent back to user.
+## データフロー
 
-## Technology Stack
+...steps 1-3...
+4. ルート沿いのアクセシブルスポット（トイレ、休憩所等）を併せて提示。Yahoo YOLP APIから建物内の施設情報（トイレの位置・アクセシビリティ）やお店の口コミ・詳細情報を取得
 
-| Technology        | Description                |
-|-------------------|----------------------------|
-| Backend           | Node.js                    |
-| Database          | MongoDB                    |
-| **Yahoo YOLP API**| API for location services   |
+...rest of the section...
 
-## API Specification
+## 技術スタック
 
-- Reference: [Yahoo YOLP API Documentation](https://developer.yahoo.co.jp/yos/)
+| 技術           | 説明                         |
+|----------------|------------------------------|
+| CI/CD          | ...                         |
+| 地図・施設情報 | Google Maps API / Yahoo YOLP API |
 
-# End of README
+...rest of the table...
+
+## API仕様
+
+...existing shared data models line...
+- Backend <-> Yahoo YOLP: [docs/yolp-api-spec.yaml](docs/yolp-api-spec.yaml)
